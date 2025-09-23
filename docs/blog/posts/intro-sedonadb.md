@@ -31,22 +31,24 @@ The Apache Sedona community is excited to announce the initial release of Sedona
 
 SedonaDB is the first open-source, single-node analytical database engine that treats spatial data as a first-class citizen.
 
-Written in Rust, it’s lightweight, blazing fast, and spatial-native. Out of the box, it provides: \
+Written in Rust, it’s lightweight, blazing fast, and spatial-native. Out of the box, it provides:
 
 * Full support for spatial types, joins, CRS (coordinate reference systems), and functions on top of industry-standard query operations.
 * Query optimizations, indexing, and data pruning features under the hood that make spatial operations just work with high performance.
 * Pythonic and SQL interfaces familiar to developers, plus APIs for R and Rust.
-* Flexibility to run in single-machine environments on local files or data lakes. 
+* Flexibility to run in single-machine environments on local files or data lakes.
 
-SedonaDB utilizes Apache Arrow and Apache DataFusion, providing everything you need from a modern, vectorized query engine. However, it also delivers the unique ability to run high-performance spatial workloads easily, without requiring extensions. It's for builders who need a spatial-first query engine. 
+<!-- more -->
+
+SedonaDB utilizes Apache Arrow and Apache DataFusion, providing everything you need from a modern, vectorized query engine. However, it also delivers the unique ability to run high-performance spatial workloads easily, without requiring extensions. It's for builders who need a spatial-first query engine.
 
 SedonaDB is easy to download and run on your local machine or in the cloud. You can install it easily in any runtime.
 
-Apache Sedona already adds geospatial support to Apache Spark (SedonaSpark), Apache Flink (SedonaFlink), and Snowflake (SedonaSnow).  SedonaDB is an excellent small data complement to the existing big data/streaming Sedona libraries.  
+Apache Sedona already adds geospatial support to Apache Spark (SedonaSpark), Apache Flink (SedonaFlink), and Snowflake (SedonaSnow).  SedonaDB is an excellent small data complement to the existing big data/streaming Sedona libraries.
 
 The initial release of SedonaDB provides a comprehensive suite of geometric vector operations and seamlessly integrates with GeoArrow, GeoParquet, and GeoPandas.  Subsequent releases will support all popular spatial functions, including functions for raster data.
 
-## SedonaDB quickstart example
+## SedonaDB Quickstart Example
 
 Start by installing SedonaDB:
 
@@ -58,6 +60,7 @@ Now instantiate the connection:
 
 ```python
 import sedona.db
+
 sd = sedona.db.connect()
 ```
 
@@ -98,15 +101,17 @@ And here are a few rows from the countries table:
 Here’s how to perform a spatial join to compute the country of each city:
 
 ```python
-sd.sql("""
-select 
+sd.sql(
+    """
+select
     cities.name as city_name,
     countries.name as country_name,
     continent
 from cities
 join countries
 where ST_Intersects(cities.geometry, countries.geometry)
-""").show(3)
+"""
+).show(3)
 ```
 
 The code utilizes `ST_Intersects` to determine if a city is contained within a given country.
@@ -126,9 +131,9 @@ Here’s the result of the query:
 └───────────────┴─────────────────────────────┴───────────┘
 ```
 
-The code above is an example of a point-in-polygon join.  The point represents the city, and the polygon represents the area that represents the country.  SedonaDB can easily perform spatial joins with optimizations, such as effectively utilizing spatial indices where required and adapting join strategies at runtime based on samples of the input data.
+The code above is an example of a point-in-polygon join.  The point represents the city, and the polygon represents the area that represents the country. SedonaDB can easily perform spatial joins with optimizations, such as effectively utilizing spatial indices where required and adapting join strategies at runtime based on samples of the input data.
 
-These types of spatial operations can be relatively slow for engines that are not optimized for spatial data.  SedonaDB is optimized for these spatial computations.  
+These types of spatial operations can be relatively slow for engines that are not optimized for spatial data.  SedonaDB is optimized for these spatial computations.
 
 ## Apache Sedona SpatialBench
 
@@ -171,9 +176,7 @@ trips_df = pd.read_parquet(data_paths["trip"])
 trips_df["pickup_geom"] = gpd.GeoSeries.from_wkb(
     trips_df["t_pickuploc"], crs="EPSG:4326"
 )
-pickups_gdf = gpd.GeoDataFrame(
-    trips_df, geometry="pickup_geom", crs="EPSG:4326"
-)
+pickups_gdf = gpd.GeoDataFrame(trips_df, geometry="pickup_geom", crs="EPSG:4326")
 
 buildings_df = pd.read_parquet(data_paths["building"])
 buildings_df["boundary_geom"] = gpd.GeoSeries.from_wkb(
@@ -189,14 +192,12 @@ result = (
     .groupby(["b_buildingkey", "b_name"], as_index=False)
     .size()
     .rename(columns={"size": "nearby_pickup_count"})
-    .sort_values(
-        ["nearby_pickup_count", "b_buildingkey"], ascending=[False, True]
-    )
+    .sort_values(["nearby_pickup_count", "b_buildingkey"], ascending=[False, True])
     .reset_index(drop=True)
 )
 ```
 
-SedonaDB optimizes query execution behind the scenes. GeoPandas requires more manual optimizations for better performance.  If you have experience tuning GeoPandas code and would like to help optimize it, please comment on [this issue](https://github.com/apache/sedona-spatialbench).
+SedonaDB optimizes query execution behind the scenes. GeoPandas requires more manual optimizations for better performance. If you have experience tuning GeoPandas code and would like to help optimize it, please comment on [this issue](https://github.com/apache/sedona-spatialbench).
 
 DuckDB Spatial offers optimized spatial join capabilities, enabling the quick execution of some queries, but it errors out for other queries. We encourage the DuckDB community to investigate these issues.
 
@@ -225,7 +226,7 @@ SedonaSchema with 1 field:
   geometry: wkb <epsg:32618>
 ```
 
-We can see that the `vermont` DataFrame maintains the CRS that’s specified in the FlatGeobuf file.  SedonaDB doesn’t have a native FlatGeobuf reader yet, but it’s easy to use the GeoPandas FlatGeobuf reader and then convert it to a SedonaDB DataFrame with a single line of code.
+We can see that the `vermont` DataFrame maintains the CRS that’s specified in the FlatGeobuf file. SedonaDB doesn’t have a native FlatGeobuf reader yet, but it’s easy to use the GeoPandas FlatGeobuf reader and then convert it to a SedonaDB DataFrame with a single line of code.
 
 Now read a GeoParquet file into a SedonaDB DataFrame.
 
@@ -250,11 +251,13 @@ Let’s expose these two tables as views and run a spatial join to see how many 
 buildings.to_view("buildings", overwrite=True)
 vermont.to_view("vermont", overwrite=True)
 
-sd.sql("""
+sd.sql(
+    """
 select count(*) from buildings
 join vermont
 where ST_Intersects(buildings.geometry, vermont.geometry)
-""").show()
+"""
+).show()
 ```
 
 This command correctly errors out because the tables have different CRSs.  For safety, SedonaDB errors out rather than give you the wrong answer!  Here’s the error message that’s easy to debug:
@@ -269,11 +272,13 @@ Use ST_Transform() or ST_SetSRID() to ensure arguments are compatible.
 Let’s rewrite the spatial join to convert the `vermont` CRS to EPSG:4326, so it’s compatible with the `buildings` CRS.
 
 ```python
-sd.sql("""
+sd.sql(
+    """
 select count(*) from buildings
 join vermont
 where ST_Intersects(buildings.geometry, ST_Transform(vermont.geometry, 'EPSG:4326'))
-""").show()
+"""
+).show()
 ```
 
 We now get the correct result:
@@ -320,7 +325,7 @@ ORDER BY distance_to_building ASC, b.b_buildingkey ASC
 ```
 
 Here are the results of the query:
- 
+
 ```
 ┌───────────┬───────────────────────────────┬───────────────┬───────────────┬──────────────────────┐
 │ t_tripkey ┆          t_pickuploc          ┆ b_buildingkey ┆ building_name ┆ distance_to_building │
@@ -334,13 +339,13 @@ Here are the results of the query:
 └───────────┴───────────────────────────────┴───────────────┴───────────────┴──────────────────────┘
 ```
 
-This is one of the queries from [SpatialBench](https://github.com/apache/sedona-spatialbench/).  
+This is one of the queries from [SpatialBench](https://github.com/apache/sedona-spatialbench/).
 
 ## Why SedonaDB was built in Rust
 
 SedonaDB is built in Rust to leverage performance, fine-grained memory management capabilities, and an expansive ecosystem of data libraries.
 
-Rust is a high-performance, memory-safe programming language. 
+Rust is a high-performance, memory-safe programming language.
 
 The Rust data ecosystem is mature, and SedonaDB leverages Rust libraries like [Apache DataFusion](https://github.com/apache/datafusion), [GeoArrow](https://github.com/geoarrow/geoarrow), and [georust/geo](https://github.com/georust/geo).
 
@@ -386,10 +391,10 @@ The community will add built-in support for other spatial file formats, such as 
 
 Raster support is also on the roadmap, which is a complex undertaking, so it’s an excellent opportunity to contribute if you’re interested in solving challenging problems with Rust.
 
-Refer to the [SedonaDB v0.2 milestone](https://github.com/apache/sedona-db/milestone/1) for more details on the specific tasks outlined for the next release.  Additionally, feel free to create issues, comment on the Discord, or start GitHub discussions to brainstorm new features. 
+Refer to the [SedonaDB v0.2 milestone](https://github.com/apache/sedona-db/milestone/1) for more details on the specific tasks outlined for the next release.  Additionally, feel free to create issues, comment on the Discord, or start GitHub discussions to brainstorm new features.
 
 ## Join the community
 
-The Apache Sedona community has an active Discord community, monthly user meetings, and regular contributor meetings.  
+The Apache Sedona community has an active Discord community, monthly user meetings, and regular contributor meetings.
 
 SedonaDB has a [well-defined roadmap](https://github.com/apache/sedona-db/milestones) and welcomes contributions from the community.  Feel free to request to take ownership of an issue, and we will be happy to assign it to you.  You’re also welcome to join the contributor meetings, and the other active contributors will be glad to help you get your pull request over the finish line!
